@@ -14,6 +14,7 @@ public class MoneyTransferTest {
     DashboardPage dashboardPage;
     DataHelper.CardInfo firstCardInfo;
     DataHelper.CardInfo secondCardInfo;
+    DataHelper.CardInfo wrongCardInfo;
     int firstCardBalance;
     int secondCardBalance;
 
@@ -26,6 +27,7 @@ public class MoneyTransferTest {
         dashboardPage = verificationPage.validVerify(verificationCode);
         firstCardInfo = getFirstCardInfo();
         secondCardInfo = getSecondCardInfo();
+        wrongCardInfo = getWrongCardInfo();
         firstCardBalance = dashboardPage.getCardBalance(firstCardInfo);
         secondCardBalance = dashboardPage.getCardBalance(secondCardInfo);
     }
@@ -33,7 +35,7 @@ public class MoneyTransferTest {
     @Test
     void shouldTransferFromFirstToSecond() {
         var amount = generateValidAmount(firstCardBalance);
-        var expectedBalanceFirstCard =  firstCardBalance - amount;
+        var expectedBalanceFirstCard = firstCardBalance - amount;
         var expectedBalanceSecondCard = secondCardBalance + amount;
         var transferPage = dashboardPage.selectCardToTransfer(secondCardInfo);
         dashboardPage = transferPage.makeValidTransfer(String.valueOf(amount), firstCardInfo);
@@ -42,6 +44,7 @@ public class MoneyTransferTest {
         assertEquals(expectedBalanceFirstCard, actualBalanceFirstCard);
         assertEquals(expectedBalanceSecondCard, actualBalanceSecondCard);
     }
+
     @Test
     void shouldTransferFromSecondToFirst() {
         var amount = generateValidAmount(secondCardBalance);
@@ -53,5 +56,29 @@ public class MoneyTransferTest {
         var actualBalanceSecondCard = dashboardPage.getCardBalance(secondCardInfo);
         assertEquals(expectedBalanceFirstCard, actualBalanceFirstCard);
         assertEquals(expectedBalanceSecondCard, actualBalanceSecondCard);
+    }
+
+    @Test
+    void shouldGerErrorMessageIfaSameCartNumber() {
+        var amount = generateValidAmount(secondCardBalance);
+        var transferPage = dashboardPage.selectCardToTransfer(firstCardInfo);
+        transferPage.makeTransfer(String.valueOf(amount), wrongCardInfo);
+        transferPage.findErrorMessager("Ошибка! Произошла ошибка");
+    }
+
+    @Test
+    void shouldGerErrorMessageIfWrongCartNumber() {
+        var amount = generateValidAmount(secondCardBalance);
+        var transferPage = dashboardPage.selectCardToTransfer(firstCardInfo);
+        transferPage.makeTransfer(String.valueOf(amount), firstCardInfo);
+        transferPage.findErrorMessager("Ошибка! Произошла ошибка");
+    }
+
+    @Test
+    void shouldGerErrorMessageIfAmountMoreBalance() {
+        var amount = generateInvalidAmount(secondCardBalance);
+        var transferPage = dashboardPage.selectCardToTransfer(firstCardInfo);
+        transferPage.makeTransfer(String.valueOf(amount), secondCardInfo);
+        transferPage.findErrorMessager("Нельзя перевести больше, чем остаток на карте");
     }
 }
